@@ -35,6 +35,35 @@ user_data = pd.read_csv('data/users.dat',
                                    engine="python")
 
 
+
+
+def movie_meta_machine():
+    # formats and generates movie meta data
+    genre_list = ["Action","Adventure","Animation","Children's","Comedy","Crime","Documentary","Drama","Fantasy","Film-Noir","Horror","Musical","Mystery","Romance","Sci-Fi","Thriller","War","Western"]
+    movie_data['date'] = movie_data['title'].map(lambda title: title.split('(')[1].strip(')'))
+    movie_data['title'] = movie_data['title'].map(lambda title: title.split('(')[0].strip())
+    movie_data['genres']= movie_data['genres'].map(lambda genres: genres.split('|'))
+    for j in genre_list:
+        movie_data[j] = False
+    for movie in movie_data.index:
+        for genre in movie_data.loc[movie,'genres']:
+            movie_data.loc[movie,genre] = True
+    return movie_data.drop(columns='genres')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ### density check function
 def density(p_df_train):
     # get density from original data
@@ -45,10 +74,22 @@ def density(p_df_train):
     density = n_rantings / (n_users * n_movies)
     return density
 
-### tran test split
+### train test split
 def traintestsplit():
     train, test = orig_train.randomSplit([0.8, 0.2], seed=427471138)
     return train, test
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ### Modelling
