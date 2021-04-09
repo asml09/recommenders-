@@ -5,6 +5,11 @@ from recommender import MovieRecommender     # the class you have to develop
 import pandas as pd
 from log import configure_logging
 
+import pyspark
+from pyspark.sql import SparkSession
+# from pyspark.sql.functions import lit
+from pyspark.ml.recommendation import ALS
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--train", help="path to training ratings file (to fit)")
@@ -35,14 +40,37 @@ if __name__ == "__main__":
     # Reading TRAIN SET from input file into pandas
     train_data = pd.read_csv(path_train_)
 
-    # Creating an instance of your recommender with the right parameters
-    reco_instance = MovieRecommender()
+    # # Creating an instance of your recommender with the right parameters
+    # reco_instance = MovieRecommender()
 
-    # fits on training data, returns a MovieRecommender object
-    model = reco_instance.fit(train_data)
+    # # fits on training data, returns a MovieRecommender object
+    # model = reco_instance.fit(train_data)
 
-    # apply predict on request_data, returns a dataframe
-    result_data = model.transform(request_data)
+    # # apply predict on request_data, returns a dataframe
+    # result_data = model.transform(request_data)
+
+    
+    spark = pyspark.sql.SparkSession.builder.getOrCreate()
+    sc = spark.sparkContext
+
+    s_df = spark.createDataFrame(train_data.drop('timestamp', axis=1))
+
+    model = ALS(
+        itemCol='movie',
+        userCol='user',
+        ratingCol='rating',
+        nonnegative=True,    
+        regParam=0.1,
+        rank=10)
+
+    recommender = model.fit(s_df)
+
+    requests_df = spark.createDataFrame(request_data)
+    predictions = recommender.transform(requests_df)
+    predictions = predictions.toPandas()
+    predictions['rating']= predictions.pop('prediction')
+
+    result_data = predictions
 
     # test if the format of results is ok
     if (result_data.shape[0] != request_data.shape[0]) or (result_data.shape[1] != 3):

@@ -4,8 +4,9 @@ import pandas as pd
 
 import pyspark
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import lit
+# from pyspark.sql.functions import lit
 from pyspark.ml.recommendation import ALS
+
 
 class MovieRecommender():
     """Template class for a Movie Recommender system."""
@@ -32,6 +33,11 @@ class MovieRecommender():
         """
         self.logger.debug("starting fit")
 
+        spark = pyspark.sql.SparkSession.builder.getOrCreate()
+        sc = spark.sparkContext
+
+        s_df = spark.createDataFrame(ratings)
+
         model = ALS(
             itemCol='movie',
             userCol='user',
@@ -40,7 +46,7 @@ class MovieRecommender():
             regParam=0.1,
             rank=10)
         
-        self.recommender = model.fit(ratings)
+        self.recommender = model.fit(s_df)
 
         self.logger.debug("finishing fit")
         return(self)
@@ -63,12 +69,13 @@ class MovieRecommender():
         self.logger.debug("starting predict")
         self.logger.debug("request count: {}".format(requests.shape[0]))
 
-        requests['rating'] = np.random.choice(range(1, 5), requests.shape[0])
-
-        predictions = self.recommender.transform(requests)
-
+        # requests['rating'] = np.random.choice(range(1, 5), requests.shape[0])
+        spark = pyspark.sql.SparkSession.builder.getOrCreate()
+        s_df = spark.createDataFrame(requests)
+        predictions = self.recommender.transform(s_df)
+        predictions = predictions.toPandas()
         self.logger.debug("finishing predict")
-        return(requests)
+        return(predictions)
 
 
 if __name__ == "__main__":
