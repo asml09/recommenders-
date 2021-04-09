@@ -65,12 +65,21 @@ if __name__ == "__main__":
 
     recommender = model.fit(s_df)
 
+    # request_data.drop(request_data.columns[0],axis=1, inplace=True)
     requests_df = spark.createDataFrame(request_data)
     predictions = recommender.transform(requests_df)
     predictions = predictions.toPandas()
     predictions['rating']= predictions.pop('prediction')
 
+    avg_ratings = train_data.groupby('movie')['rating'].mean()
+    for i in predictions.index:
+        if type(predictions.loc[i, 'rating']) != float:
+            if predictions.loc[i,'movie'] in avg_ratings.index:
+                predictions.loc[i,'rating'] = avg_ratings[predictions.loc[i,'movie']]
+            else: 
+                predictions.loc[i,'rating'] = 1
     result_data = predictions
+
 
     # test if the format of results is ok
     if (result_data.shape[0] != request_data.shape[0]) or (result_data.shape[1] != 3):
