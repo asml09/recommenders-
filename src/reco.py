@@ -30,7 +30,7 @@ movie_data = pd.read_csv('data/movies.dat',
 
 user_data = pd.read_csv('data/users.dat',
                                    sep="\t|::",
-                                   names=['user','sex','?', '??', '???'], 
+                                   names=['user','gender','age','occupation','zip'], 
                                    header=None, 
                                    engine="python")
 
